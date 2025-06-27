@@ -49,12 +49,7 @@ def evaluator(candidates, args):
 
     return groups
 
-pop = generator(random.Random(), {"population_size": 100, "radius" : 0.2})
-groups = evaluator(pop, {"group_min" : 1, "group_max" : 10})
-total_size = 0
-for group in groups:
-    print(f"Nouveau group, taille {len(group)}")
-    for lamp in group:
-        print(lamp.x, lamp.y, lamp.r)
-        total_size += 1
-print(total_size)
+def crossover(random, candidates, args) :
+  
+  fitness_values = evaluator()
+  

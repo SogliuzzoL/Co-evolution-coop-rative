@@ -1,3 +1,4 @@
 matplotlib
 numpy
+pymoo
 git+https://github.com/aarongarrett/inspyred.git

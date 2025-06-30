@@ -1,22 +1,15 @@
-from individu import Lampe
-from model import random_generator, generator, evaluator
+from nsga2_config import run_nsga2
+from animation import create_animation, generations
+from parameters import group_min, group_max
 
-import inspyred
-import numpy as np
-import matplotlib.pyplot as plt
 
-nsga2 = inspyred.ec.emo.NSGA2(random=random_generator())
-nsga2.terminator = inspyred.ec.terminators.evaluation_termination
-nsga2.variator = []
+def main():
+    # Lancer l’optimisation NSGA-II
+    pareto_front = run_nsga2()
 
-pareto_front = nsga2.evolve(
-    generator = generator,
-    evaluator=evaluator,
+    # Générer l’animation à partir des données collectées
+    create_animation(generations, group_min, group_max)
 
-    # args
-    population_size = 100,
-    group_min = 1,
-    group_max = 10,
-    radius = 0.2,
-    fitness_lamp = {}
-)
+
+if __name__ == "__main__":
+    main()

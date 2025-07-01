@@ -1,44 +1,51 @@
+# fitness.py
 import numpy as np
-from parameters import radius
+from config import LAMP_RADIUS, SQUARE_SIZE, GRID_RESOLUTION
 
+def coverage(individual):
+    """
+    Calcule la proportion de la surface du carré couverte par les lampes.
+    individual : liste de positions [(x,y), ...] d'une solution complète (toutes lampes)
+    """
+    grid_x, grid_y = np.meshgrid(np.linspace(0, SQUARE_SIZE, GRID_RESOLUTION),
+                                 np.linspace(0, SQUARE_SIZE, GRID_RESOLUTION))
+    points = np.vstack([grid_x.ravel(), grid_y.ravel()]).T
+    covered = np.zeros(points.shape[0], dtype=bool)
+    r = LAMP_RADIUS
 
-def fitness_nombre_lampes(groupe):
-    return len(groupe)
+    for (x, y) in individual:
+        dist = np.linalg.norm(points - np.array([x, y]), axis=1)
+        covered |= dist <= r
 
+    return np.sum(covered) / len(covered)
 
-def fitness_portion_aire(groupe, discretization=10):
-    step = 1 / discretization
-    x = np.linspace(0, 1 - step, discretization)
-    y = np.linspace(0, 1 - step, discretization)
-    X, Y = np.meshgrid(x, y)
-    coverage_mask = np.zeros(X.shape, dtype=bool)
+def overlap(individual):
+    """
+    Calcule la surface totale de chevauchement entre lampes.
+    individual : liste de positions [(x,y), ...] d'une solution complète (toutes lampes)
+    """
+    r = LAMP_RADIUS
+    overlap_area = 0.0
 
-    for (cx, cy) in groupe:
-        dist = np.sqrt((X - cx)**2 + (Y - cy)**2)
-        coverage_mask |= (dist <= radius)  # union des zones couvertes
+    def circle_intersection_area(d, r):
+        if d >= 2*r:
+            return 0.0
+        part1 = r*r * np.arccos(d/(2*r))
+        part2 = (d/2)*np.sqrt(4*r*r - d*d)
+        return 2*(part1 - part2)
 
-    coverage = np.sum(coverage_mask)
-    total_area = discretization ** 2
-    return coverage / total_area
+    n = len(individual)
+    for i in range(n):
+        for j in range(i+1, n):
+            d = np.linalg.norm(np.array(individual[i]) - np.array(individual[j]))
+            overlap_area += circle_intersection_area(d, r)
 
+    return overlap_area
 
-def fitness_overlapping(groupe, discretization=100):
-    step = 1 / discretization
-    x = np.linspace(0, 1 - step, discretization)
-    y = np.linspace(0, 1 - step, discretization)
-    X, Y = np.meshgrid(x, y)
-
-    coverage_count = np.zeros(X.shape, dtype=int)
-
-    for (cx, cy) in groupe:
-        dist = np.sqrt((X - cx)**2 + (Y - cy)**2)
-        coverage_count += (dist <= radius).astype(int)
-
-    # Overlaps = total coverage count minus number of covered points (once)
-    overlaps = np.sum(coverage_count - 1 * (coverage_count > 0))
-    total_area = discretization ** 2
-    return overlaps / total_area
-
-
-def fitness_globale(groupe):
-    return [-fitness_portion_aire(groupe), fitness_overlapping(groupe)]
+def evaluate_individual_multiobj(individual):
+    """
+    Retourne un tuple (coverage, -overlap) à maximiser.
+    """
+    cov = coverage(individual)
+    ovlp = overlap(individual)
+    return (cov, -ovlp)

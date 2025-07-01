@@ -1,19 +1,24 @@
 # population.py
+"""
+Gestion des populations pour l'algorithme génétique.
+"""
+
 import random
 from config import NUM_LAMPS, POP_SIZE, SQUARE_SIZE
 
+
 def initialize_population():
     """
-    Initialise une liste de sous-populations,
-    une par lampe. Chaque sous-population contient POP_SIZE individus
-    chacun défini par (x,y) dans le carré.
+    Initialise les sous-populations pour chaque lampe.
+
+    Returns:
+        list: Liste de sous-populations, chacune contenant POP_SIZE individus
     """
     populations = []
     for _ in range(NUM_LAMPS):
-        pop = []
-        for _ in range(POP_SIZE):
-            x = random.uniform(0, SQUARE_SIZE)
-            y = random.uniform(0, SQUARE_SIZE)
-            pop.append((x, y))
+        pop = [
+            (random.uniform(0, SQUARE_SIZE), random.uniform(0, SQUARE_SIZE))
+            for _ in range(POP_SIZE)
+        ]
         populations.append(pop)
     return populations

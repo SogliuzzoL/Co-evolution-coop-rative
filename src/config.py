@@ -1,16 +1,21 @@
 # config.py
+"""
+Configuration globale du système d'optimisation des lampes.
+Contient tous les paramètres ajustables de l'algorithme.
+"""
 
 # Paramètres du problème
-SQUARE_SIZE = 1.0        # Taille du carré (1x1)
-LAMP_RADIUS = 0.3        # Rayon des lampes (cercles)
+SQUARE_SIZE = 1.0        # Taille du carré (1x1 unité)
+LAMP_RADIUS = 0.3        # Rayon d'éclairage des lampes
 
-NUM_LAMPS = 4            # Nombre de lampes / sous-populations
-POP_SIZE = 30            # Taille des sous-populations
-MAX_GENERATIONS = 25     # Nombre de générations
+# Paramètres de l'algorithme génétique
+NUM_LAMPS = 4            # Nombre de lampes à optimiser
+POP_SIZE = 30            # Taille de chaque sous-population
+MAX_GENERATIONS = 25     # Nombre maximal de générations
 
-# Paramètres mutation
-MUTATION_STDDEV = 0.05
-MUTATION_PROB = 0.3
+# Paramètres de mutation
+MUTATION_STDDEV = 0.05   # Écart-type pour la mutation gaussienne
+MUTATION_PROB = 0.3      # Probabilité qu'une mutation se produise
 
-# Paramètres de la grille utilisée pour le calcul de couverture
-GRID_RESOLUTION = 100    # NxN points sur la grille
+# Paramètres de calcul de fitness
+GRID_RESOLUTION = 100    # Résolution de la grille pour calculer la couverture

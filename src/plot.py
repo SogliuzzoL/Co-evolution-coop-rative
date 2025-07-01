@@ -21,12 +21,3 @@ def plot_group(individuals):
     ax.set_title("Visualisation d'un groupe d'individus")
     ax.grid(True)
     plt.show()
-
-
-# Exemple d'utilisation avec 3 lampes
-group = [
-    [0.2, 0.3, 0.3],
-    [0.6, 0.7, 0.3],
-    [0.8, 0.2, 0.3]
-]
-plot_group(group)

@@ -8,10 +8,9 @@ def random_generator():
 
 
 def generator(random: random, args: dict):
-    r = args["radius"]
     x = random.uniform(0, 1)
     y = random.uniform(0, 1)
-    return [x, y, r]
+    return [x, y]
 
 
 def evaluator(candidates, args):
@@ -77,32 +76,26 @@ def mutation(random: random, candidates: list, args: dict):
     return candidates
 
 
-def crossover(random: random, parents: list, args: dict):
-    pm = args["pm"]
-    mu = args["mu"]
-    sigma = args["sigma"]
-    tau = args["tau"]
+def crossover(random: random, candidates: list, args: dict):
     offspring = []
-    for i in range(0, len(parents), 2):
-        if i + 1 < len(parents) and random.uniform(0, 1) < pm:
-            parent1 = parents[i]
-            parent2 = parents[i + 1]
-
+    for i in range(0, len(candidates), 2):
+        if i + 1 < len(candidates):
+            parent1 = candidates[i]
+            parent2 = candidates[i + 1]
+            alpha = random.uniform(-0.2, 1.2)
             child1 = [
-                (parent1[0] + parent2[0]) / 2 + random.gauss(mu, sigma),
-                (parent1[1] + parent2[1]) / 2 + random.gauss(mu, sigma),
-                (parent1[2] + parent2[2]) / 2
+                alpha * parent1[0] + (1 - alpha) * parent2[0],
+                alpha * parent1[1] + (1 - alpha) * parent2[1],
             ]
             child2 = [
-                (parent1[0] + parent2[0]) / 2 - random.gauss(mu, sigma),
-                (parent1[1] + parent2[1]) / 2 - random.gauss(mu, sigma),
-                (parent1[2] + parent2[2]) / 2
+                (1 - alpha) * parent1[0] + alpha * parent2[0],
+                (1 - alpha) * parent1[1] + alpha * parent2[1],
             ]
-            offspring.append(child1)
-            offspring.append(child2)
+            child1[0] = max(0, min(child1[0], 1))
+            child1[1] = max(0, min(child1[1], 1))
+            child2[0] = max(0, min(child2[0], 1))
+            child2[1] = max(0, min(child2[1], 1))
+            offspring.extend([child1, child2])
         else:
-            offspring.append(parents[i])
-            if i + 1 < len(parents):
-                offspring.append(parents[i + 1])
-    args["sigma"] *= np.exp(random.gauss(sigma=tau))
-    return offspring
+            offspring.append(candidates[i])
+    return candidates + offspring

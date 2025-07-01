@@ -1,55 +1,43 @@
-import math
-import matplotlib.pyplot as plt
 import numpy as np
-import sys
+from parameters import radius
 
 
 def fitness_nombre_lampes(groupe):
     return len(groupe)
 
 
-def fitness_portion_aire(groupe):
+def fitness_portion_aire(groupe, discretization=10):
+    step = 1 / discretization
+    x = np.linspace(0, 1 - step, discretization)
+    y = np.linspace(0, 1 - step, discretization)
+    X, Y = np.meshgrid(x, y)
+    coverage_mask = np.zeros(X.shape, dtype=bool)
 
-    # TODO lower discretization here to speed up computation, increase for increased precision
-    discretization = 100
-    discretizationStep = 1 / discretization
+    for (cx, cy) in groupe:
+        dist = np.sqrt((X - cx)**2 + (Y - cy)**2)
+        coverage_mask |= (dist <= radius)  # union des zones couvertes
 
-    totalArea = discretization * discretization
-    coverage = 0.0
-
-    for x in np.arange(0.0, 1, discretizationStep):
-        for y in np.arange(0.0, 1, discretizationStep):
-            for lampe in groupe:
-                radius = lampe[2]
-                distance = math.sqrt(
-                    math.pow(lampe[0] - x, 2) + math.pow(lampe[1] - y, 2))
-                if distance <= radius:
-                    coverage += 1
-                    break
-    return coverage / totalArea
+    coverage = np.sum(coverage_mask)
+    total_area = discretization ** 2
+    return coverage / total_area
 
 
-def fitness_overlapping(groupe):
+def fitness_overlapping(groupe, discretization=100):
+    step = 1 / discretization
+    x = np.linspace(0, 1 - step, discretization)
+    y = np.linspace(0, 1 - step, discretization)
+    X, Y = np.meshgrid(x, y)
 
-    # TODO lower discretization here to speed up computation, increase for increased precision
-    discretization = 100
-    discretizationStep = 1 / discretization
+    coverage_count = np.zeros(X.shape, dtype=int)
 
-    totalArea = discretization * discretization
-    overlaps = 0
+    for (cx, cy) in groupe:
+        dist = np.sqrt((X - cx)**2 + (Y - cy)**2)
+        coverage_count += (dist <= radius).astype(int)
 
-    for x in np.arange(0.0, 1, discretizationStep):
-        for y in np.arange(0.0, 1, discretizationStep):
-            coveredBylamp = 0
-            for lampe in groupe:
-                radius = lampe[2]
-                distance = math.sqrt(
-                    math.pow(lampe[0] - x, 2) + math.pow(lampe[1] - y, 2))
-                if distance <= radius:
-                    coveredBylamp += 1
-            if coveredBylamp > 0:
-                overlaps += coveredBylamp - 1
-    return overlaps / totalArea
+    # Overlaps = total coverage count minus number of covered points (once)
+    overlaps = np.sum(coverage_count - 1 * (coverage_count > 0))
+    total_area = discretization ** 2
+    return overlaps / total_area
 
 
 def fitness_globale(groupe):

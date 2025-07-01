@@ -8,7 +8,8 @@ from datetime import datetime
 def animated_observer(population, num_generations, num_evaluations, args):
     snapshot = [(-ind.fitness[0], ind.fitness[1])
                 for ind in population]
-    generations.append((num_generations, snapshot))
+    candidates = [ind.candidate for ind in population]
+    generations.append((num_generations, snapshot, candidates))
     print(
         f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] "
         f"Génération {num_generations} | "
@@ -20,7 +21,9 @@ def animated_observer(population, num_generations, num_evaluations, args):
 def run_nsga2():
     nsga2 = inspyred.ec.emo.NSGA2(random=random_generator())
     nsga2.terminator = inspyred.ec.terminators.evaluation_termination
-    nsga2.variator = [mutation]
+    nsga2.variator = [inspyred.ec.variators.gaussian_mutation,
+                      inspyred.ec.variators.blend_crossover]
+    # nsga2.variator = [mutation, crossover]
     nsga2.observer = animated_observer
 
     pareto_front = nsga2.evolve(

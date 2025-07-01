@@ -6,27 +6,20 @@ generations = []
 
 
 def create_animation(generations, group_min, group_max):
-    fig = make_subplots(rows=1, cols=3, subplot_titles=[
-        "Surface vs Nb Lampes",
-        "Overlapping vs Nb Lampes",
+    fig = make_subplots(rows=1, cols=1, subplot_titles=[
         "Surface vs Overlapping"
     ])
 
     frames = []
 
     for gen, data in generations:
-        nb_lampes = [d[0] for d in data]
-        surface = [d[1] for d in data]
-        overlapping = [d[2] for d in data]
+        surface = [d[0] for d in data]
+        overlapping = [d[1] for d in data]
 
         frame = go.Frame(
             data=[
-                go.Scatter(x=nb_lampes, y=surface, mode='markers',
-                           marker=dict(color='blue')),
-                go.Scatter(x=nb_lampes, y=overlapping,
-                           mode='markers', marker=dict(color='green')),
                 go.Scatter(x=overlapping, y=surface, mode='markers',
-                           marker=dict(color='red')),
+                           marker=dict(color='blue')),
             ],
             name=f"Gen {gen}"
         )
@@ -35,19 +28,11 @@ def create_animation(generations, group_min, group_max):
     # Ajout des traces initiales vides
     fig.add_trace(go.Scatter(x=[], y=[], mode='markers',
                   marker=dict(color='blue')), row=1, col=1)
-    fig.add_trace(go.Scatter(x=[], y=[], mode='markers',
-                  marker=dict(color='green')), row=1, col=2)
-    fig.add_trace(go.Scatter(x=[], y=[], mode='markers',
-                  marker=dict(color='red')), row=1, col=3)
 
     fig.update_layout(
         title="Évolution de la population par génération",
-        xaxis=dict(title="Nb Lampes", range=[group_min - 1, group_max + 1]),
+        xaxis=dict(title="Overlapping", range=[-0.1, 1.1]),
         yaxis=dict(title="Surface", range=[-0.1, 1.1]),
-        xaxis2=dict(title="Nb Lampes", range=[group_min - 1, group_max + 1]),
-        yaxis2=dict(title="Overlapping", range=[-0.1, 1.1]),
-        xaxis3=dict(title="Overlapping", range=[-0.1, 1.1]),
-        yaxis3=dict(title="Surface", range=[-0.1, 1.1]),
         updatemenus=[{
             "type": "buttons",
             "buttons": [

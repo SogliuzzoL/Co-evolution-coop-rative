@@ -53,4 +53,4 @@ def fitness_overlapping(groupe):
 
 
 def fitness_globale(groupe):
-    return [fitness_nombre_lampes(groupe), -fitness_portion_aire(groupe), fitness_overlapping(groupe)]
+    return [-fitness_portion_aire(groupe), fitness_overlapping(groupe)]

@@ -1,9 +1,11 @@
-group_min = 1
-group_max = 10
-radius = 0.1
+group_min = 2
+group_max = 5
+pop_size = 50
+nb_group = 25
+max_evaluations = 1000
+radius = 0.3
 pm = 0.3
 mu = 0
 sigma = 1
 tau = 0.5
 pm = 0.3
-pop_size = 50

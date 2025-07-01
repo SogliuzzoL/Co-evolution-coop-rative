@@ -5,10 +5,10 @@ Gère l'exécution de l'algorithme génétique et la création de l'animation in
 """
 
 import plotly.graph_objects as go
-from config import NUM_LAMPS, POP_SIZE, MAX_GENERATIONS, SQUARE_SIZE, LAMP_RADIUS
+from config import NUM_LAMPS, POP_SIZE, MAX_GENERATIONS, SQUARE_SIZE
 from population import initialize_population
 from fitness import evaluate_individual_multiobj
-from genetic_ops import tournament_selection, crossover, mutate, non_dominated_sort
+from genetic_ops import tournament_selection, crossover, blend_crossover, mutate, non_dominated_sort
 from visualization import create_frame, assemble_solution
 
 
@@ -64,8 +64,10 @@ def run_and_animate():
             for j in range(0, len(selected), 2):
                 parent1 = selected[j]
                 parent2 = selected[(j + 1) % len(selected)]
-                child1 = crossover(parent1, parent2)
-                child2 = crossover(parent2, parent1)
+                # child1 = crossover(parent1, parent2)
+                # child2 = crossover(parent2, parent1)
+                child1 = blend_crossover(parent1, parent2)
+                child2 = blend_crossover(parent2, parent1)
                 child1 = mutate(child1)
                 child2 = mutate(child2)
                 new_pop.extend([child1, child2])

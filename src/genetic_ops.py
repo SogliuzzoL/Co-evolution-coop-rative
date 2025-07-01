@@ -8,7 +8,6 @@ Opérations génétiques pour l'algorithme évolutionnaire :
 """
 
 import random
-import numpy as np
 from config import MUTATION_STDDEV, MUTATION_PROB, SQUARE_SIZE
 
 
@@ -94,6 +93,34 @@ def crossover(parent1, parent2):
     x = (parent1[0] + parent2[0]) / 2
     y = (parent1[1] + parent2[1]) / 2
     return (x, y)
+
+
+def blend_crossover(parent1, parent2, alpha=0.5):
+    """
+    Croisement par blend crossover (BLX-α) entre deux parents.
+
+    Args:
+        parent1: Premier parent (x, y)
+        parent2: Second parent (x, y)
+        alpha: Paramètre de dispersion (par défaut: 0.5)
+
+    Returns:
+        tuple: Enfant (x, y) généré dans l'intervalle étendu
+    """
+    # Calcul des intervalles pour chaque dimension
+    x_min = min(parent1[0], parent2[0])
+    x_max = max(parent1[0], parent2[0])
+    x_range = x_max - x_min
+    x_child = x_min - alpha * x_range + \
+        (1 + 2 * alpha) * x_range * random.random()
+
+    y_min = min(parent1[1], parent2[1])
+    y_max = max(parent1[1], parent2[1])
+    y_range = y_max - y_min
+    y_child = y_min - alpha * y_range + \
+        (1 + 2 * alpha) * y_range * random.random()
+
+    return (x_child, y_child)
 
 
 def mutate(individual):

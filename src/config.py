@@ -6,10 +6,10 @@ Contient tous les paramètres ajustables de l'algorithme.
 
 # Paramètres du problème
 SQUARE_SIZE = 1.0        # Taille du carré (1x1 unité)
-LAMP_RADIUS = 0.3        # Rayon d'éclairage des lampes
+LAMP_RADIUS = 0.2        # Rayon d'éclairage des lampes
 
 # Paramètres de l'algorithme génétique
-NUM_LAMPS = 4            # Nombre de lampes à optimiser
+NUM_LAMPS = 9            # Nombre de lampes à optimiser
 POP_SIZE = 30            # Taille de chaque sous-population
 MAX_GENERATIONS = 25     # Nombre maximal de générations
 

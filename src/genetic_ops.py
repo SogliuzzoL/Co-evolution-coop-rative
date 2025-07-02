@@ -63,7 +63,6 @@ def tournament_selection(population, fitnesses, k=3):
     """
     selected = []
     n = len(population)
-
     for _ in range(n):
         # Sélection des participants au tournoi
         aspirants_idx = random.sample(range(n), k)
@@ -75,7 +74,6 @@ def tournament_selection(population, fitnesses, k=3):
         winner = random.choice(
             non_dom) if non_dom else random.choice(aspirants)
         selected.append(winner)
-
     return selected
 
 

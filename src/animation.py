@@ -1,260 +1,166 @@
-import random
-from datetime import datetime
-from plotly.subplots import make_subplots
+# animation.py
+"""
+Module d'animation pour visualiser l'évolution des solutions au fil des générations.
+Gère l'exécution de l'algorithme génétique et la création de l'animation interactive.
+"""
+
 import plotly.graph_objects as go
-from fitness import fitness_globale
-from itertools import combinations
-from parameters import group_size
-import numpy as np
-from parameters import radius
-
-generations = []
+from config import NUM_LAMPS, POP_SIZE, MAX_GENERATIONS, SQUARE_SIZE
+from population import initialize_population
+from fitness import evaluate_individual_multiobj
+from genetic_ops import tournament_selection, crossover, blend_crossover, mutate, non_dominated_sort
+from visualization import create_frame, assemble_solution
 
 
-def find_best_group_by_surface(candidates, max_samples=100):
-    best_group = None
-    max_surface = float('-inf')
-    all_groups = list(combinations(candidates, group_size))
-    if len(all_groups) > max_samples:
-        sampled_groups = random.sample(all_groups, max_samples)
-    else:
-        sampled_groups = all_groups
-
-    for candidate_group in sampled_groups:
-        surface, _ = fitness_globale(candidate_group)
-        current_surface = -surface  # car fitness_globale donne surface négative ?
-        if current_surface > max_surface:
-            max_surface = current_surface
-            best_group = candidate_group
-    return best_group
-
-
-def find_best_group_by_overlapping(candidates, max_samples=100):
-    best_group = None
-    min_overlapping = float('inf')
-    all_groups = list(combinations(candidates, group_size))
-    if len(all_groups) > max_samples:
-        sampled_groups = random.sample(all_groups, max_samples)
-    else:
-        sampled_groups = all_groups
-
-    for candidate_group in sampled_groups:
-        _, overlapping = fitness_globale(candidate_group)
-        if overlapping < min_overlapping:
-            min_overlapping = overlapping
-            best_group = candidate_group
-    return best_group
-
-
-def find_best_group_compromise(candidates, max_samples=100, alpha=0.5):
-    """
-    Trouve un groupe qui optimise un compromis entre surface et overlapping.
-    alpha contrôle le poids donné à la surface (entre 0 et 1).
-    score = alpha * surface_norm - (1 - alpha) * overlapping_norm
-    (Il faut normaliser surface et overlapping pour qu'ils soient comparables.)
-    """
-    best_group = None
-    best_score = float('-inf')
-    all_groups = list(combinations(candidates, group_size))
-    if len(all_groups) > max_samples:
-        sampled_groups = random.sample(all_groups, max_samples)
-    else:
-        sampled_groups = all_groups
-
-    # Pré-calcul pour normalisation min/max
-    surfaces = []
-    overlappings = []
-    for candidate_group in sampled_groups:
-        s, o = fitness_globale(candidate_group)
-        surfaces.append(-s)  # surface positive
-        overlappings.append(o)
-
-    min_surface, max_surface = min(surfaces), max(surfaces)
-    min_overlap, max_overlap = min(overlappings), max(overlappings)
-
-    def normalize(value, vmin, vmax):
-        if vmax == vmin:
-            return 0.5  # éviter division par 0
-        return (value - vmin) / (vmax - vmin)
-
-    for candidate_group, s, o in zip(sampled_groups, surfaces, overlappings):
-        s_norm = normalize(s, min_surface, max_surface)
-        o_norm = normalize(o, min_overlap, max_overlap)
-        score = alpha * s_norm - (1 - alpha) * o_norm
-        if score > best_score:
-            best_score = score
-            best_group = candidate_group
-
-    return best_group
-
-
-def create_animation(generations):
-    fig = make_subplots(
-        rows=2, cols=2,
-        subplot_titles=[
-            "Surface vs Overlapping (Individus)",
-            f"Groupe de {group_size} lampes",
-            "Évolution Surface & Overlapping (Individus)",
-            f"Évolution Surface & Overlapping (Groupe {group_size})"
-        ],
-        vertical_spacing=0.2
-    )
-
-    annotation_x = 0.75
-    annotation_y = 1.05
-
-    fig.update_layout(annotations=[dict(
-        x=annotation_x,
-        y=annotation_y,
-        xref="paper",
-        yref="paper",
-        text="",
-        showarrow=False,
-        font=dict(size=12, color="black"),
-        align="center"
-    )])
-
-    # Stockage moyennes par génération
-    mean_surfaces = []
-    mean_overlappings = []
-    group_surfaces = []
-    group_overlappings = []
-    gens = []
-
+def run_and_animate():
+    """Exécute l'algorithme génétique et génère l'animation des résultats."""
+    # Initialisation
+    populations = initialize_population()
+    best_individuals = [pop[0] for pop in populations]
     frames = []
-    for gen, data, candidates in generations:
-        print(
-            f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Génération {gen} en cours...")
+    fitness_progress = []
 
-        surface = [d[0] for d in data]
-        overlapping = [d[1] for d in data]
+    # Boucle d'évolution
+    for gen in range(MAX_GENERATIONS):
+        # Évaluation de la solution globale
+        solution = assemble_solution(best_individuals)
+        global_fitness = evaluate_individual_multiobj(solution)
+        fitness_progress.append(global_fitness)
 
-        mean_surfaces.append(np.mean(surface))
-        mean_overlappings.append(np.mean(overlapping))
-        gens.append(gen)
-
-        groupe = find_best_group_compromise(candidates)
-        fitness_groupe = fitness_globale(groupe)
-
-        group_surfaces.append(-fitness_groupe[0])
-        group_overlappings.append(fitness_groupe[1])
-
-        scatter_trace = go.Scatter(
-            x=overlapping,
-            y=surface,
-            mode='markers',
-            marker=dict(color='blue'),
-            name="Individus"
-        )
-
-        shapes = [dict(
-            type="circle",
-            xref="x2",
-            yref="y2",
-            x0=x - radius,
-            y0=y - radius,
-            x1=x + radius,
-            y1=y + radius,
-            line=dict(color="black"),
-            fillcolor="blue",
-            opacity=0.3
-        ) for x, y in groupe]
-
-        annotation_text = (
-            f"Fitness groupe {group_size} : Surface = {-fitness_groupe[0]:.3f}, "
-            f"Overlapping = {fitness_groupe[1]:.3f}"
-        )
-
-        frame = go.Frame(
-            data=[scatter_trace],
-            name=f"Gen {gen}",
-            layout=go.Layout(
-                shapes=shapes,
-                annotations=[dict(
-                    x=annotation_x,
-                    y=annotation_y,
-                    xref="paper",
-                    yref="paper",
-                    text=annotation_text,
-                    showarrow=False,
-                    font=dict(size=12, color="black"),
-                    align="center"
-                )]
+        # Création du cadre d'animation pour cette génération
+        shapes, scatter = create_frame(solution)
+        frames.append(
+            go.Frame(
+                data=[scatter],
+                layout=dict(shapes=shapes),
+                name=str(gen)
             )
         )
-        frames.append(frame)
 
-    # Traces initiales vides pour animation (col 1 et 2)
-    fig.add_trace(go.Scatter(x=[], y=[], mode='markers',
-                  name="Individus"), row=1, col=1)
-    fig.add_trace(go.Scatter(x=[], y=[], mode='markers',
-                  name=f"Groupe {group_size}"), row=1, col=2)
+        # Optimisation pour chaque lampe
+        for i in range(NUM_LAMPS):
+            # Évaluation des individus
+            fitnesses = []
+            for individual in populations[i]:
+                temp_solution = best_individuals.copy()
+                temp_solution[i] = individual
+                fit = evaluate_individual_multiobj(temp_solution)
+                fitnesses.append(fit)
 
-    # Courbes fixes en bas à gauche (col 1, row 2)
-    fig.add_trace(go.Scatter(
-        x=gens, y=mean_surfaces,
+            # Sélection des non-dominés
+            non_dom = non_dominated_sort(populations[i], fitnesses)
+            best_cand = max(
+                non_dom,
+                key=lambda ind: evaluate_individual_multiobj(
+                    [ind if idx == i else best_individuals[idx]
+                        for idx in range(NUM_LAMPS)]
+                )[0]
+            )
+            best_individuals[i] = best_cand
+
+            # Reproduction
+            selected = tournament_selection(populations[i], fitnesses)
+            new_pop = []
+            for j in range(0, len(selected), 2):
+                parent1 = selected[j]
+                parent2 = selected[(j + 1) % len(selected)]
+                # child1 = crossover(parent1, parent2)
+                # child2 = crossover(parent2, parent1)
+                child1 = blend_crossover(parent1, parent2)
+                child2 = blend_crossover(parent2, parent1)
+                child1 = mutate(child1)
+                child2 = mutate(child2)
+                new_pop.extend([child1, child2])
+            populations[i] = new_pop[:POP_SIZE]
+
+        # Affichage des résultats
+        print(
+            f"Génération {gen+1}/{MAX_GENERATIONS} - "
+            f"Couverture: {global_fitness[0]*100:.2f}%, "
+            f"Chevauchement: {-global_fitness[1]:.4f}"
+        )
+
+    # Affichage de la solution finale
+    print("\nMeilleure configuration finale des lampes :")
+    for i, lamp in enumerate(best_individuals):
+        print(f"  Lampe {i+1}: ({lamp[0]:.3f}, {lamp[1]:.3f})")
+
+    # Configuration de l'animation
+    slider_steps = [
+        dict(
+            method="animate",
+            args=[[frame.name],
+                  dict(mode="immediate", frame=dict(duration=0, redraw=True),
+                       transition=dict(duration=0))],
+            label=f"Gen {i+1}"
+        )
+        for i, frame in enumerate(frames)
+    ]
+
+    sliders = [dict(
+        active=0,
+        pad={"t": 50},
+        steps=slider_steps,
+        currentvalue={"prefix": "Génération : "},
+        x=0.1,
+        y=0,
+        len=0.8,
+    )]
+
+    # Création des traces pour les indicateurs de performance
+    coverage_trace = go.Scatter(
+        x=list(range(1, MAX_GENERATIONS + 1)),
+        y=[f[0] for f in fitness_progress],
         mode='lines+markers',
-        name='Surface moyenne',
-        line=dict(color='green')
-    ), row=2, col=1)
-
-    fig.add_trace(go.Scatter(
-        x=gens, y=mean_overlappings,
+        name='Couverture',
+        yaxis='y2',
+        xaxis='x2'
+    )
+    overlap_trace = go.Scatter(
+        x=list(range(1, MAX_GENERATIONS + 1)),
+        y=[-f[1] for f in fitness_progress],
         mode='lines+markers',
-        name='Overlapping moyen',
-        line=dict(color='red')
-    ), row=2, col=1)
-
-    # Courbes fixes en bas à droite (col 2, row 2)
-    fig.add_trace(go.Scatter(
-        x=gens, y=group_surfaces,
-        mode='lines+markers',
-        name='Surface groupe',
-        line=dict(color='green', dash='dash')
-    ), row=2, col=2)
-
-    fig.add_trace(go.Scatter(
-        x=gens, y=group_overlappings,
-        mode='lines+markers',
-        name='Overlapping groupe',
-        line=dict(color='red', dash='dash')
-    ), row=2, col=2)
-
-    fig.update_layout(
-        title=f"Évolution et Fitness Globale du groupe de {group_size} lampes",
-        xaxis=dict(title="Overlapping"),
-        yaxis=dict(title="Surface"),
-        xaxis2=dict(title="x (lampes)", range=[0, 1]),
-        yaxis2=dict(title="y (lampes)", range=[
-                    0, 1], scaleanchor="x2", scaleratio=1),
-        xaxis3=dict(title="Génération"),
-        yaxis3=dict(title="Valeur"),
-        xaxis4=dict(title="Génération"),
-        yaxis4=dict(title="Valeur"),
-        updatemenus=[{
-            "type": "buttons",
-            "buttons": [
-                {"label": "Play", "method": "animate",
-                 "args": [None, {"frame": {"duration": 500, "redraw": True}}]},
-                {"label": "Pause", "method": "animate",
-                 "args": [[None], {"mode": "immediate",
-                                   "frame": {"duration": 0},
-                                   "transition": {"duration": 0}}]}
-            ]
-        }],
-        sliders=[{
-            "steps": [
-                {"method": "animate",
-                 "args": [[f.name], {"mode": "immediate",
-                                     "frame": {"duration": 0},
-                                     "transition": {"duration": 0}}],
-                 "label": f.name
-                 } for f in frames
-            ]
-        }],
-        height=700,
-        width=1000
+        name='Chevauchement',
+        yaxis='y2',
+        xaxis='x2'
     )
 
-    fig.frames = frames
-    fig.write_html("animation.html")
+    # Création de la figure finale
+    fig = go.Figure(
+        data=list(frames[0].data) + [coverage_trace, overlap_trace],
+        layout=go.Layout(
+            title="Optimisation du placement des lampes",
+            shapes=frames[0].layout.shapes,
+            xaxis=dict(
+                domain=[0, 0.45],
+                range=[0, SQUARE_SIZE],
+                scaleanchor="y",
+                scaleratio=1,
+                autorange=False
+            ),
+            yaxis=dict(
+                domain=[0, 1],
+                range=[0, SQUARE_SIZE],
+                autorange=False
+            ),
+            xaxis2=dict(domain=[0.55, 1], title="Génération"),
+            yaxis2=dict(domain=[0, 1], title="Valeur", autorange=True),
+            sliders=sliders,
+            updatemenus=[dict(
+                type="buttons",
+                buttons=[dict(
+                    label="Play",
+                    method="animate",
+                    args=[None, {
+                        "frame": {"duration": 300, "redraw": True},
+                        "fromcurrent": True,
+                        "transition": {"duration": 0}
+                    }]
+                )]
+            )]
+        ),
+        frames=frames
+    )
+
+    # Sauvegarde et affichage
+    fig.write_html("optimisation_lampes.html", auto_open=True)
